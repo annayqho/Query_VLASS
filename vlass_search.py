@@ -59,8 +59,15 @@ def get_tiles():
     return (names, dec_min, dec_max, ra_min, ra_max, epoch, obsdate)
 
 
-def search_tiles(tiles, ra_h, dec_d):
-    """ Now that you've processed the file, search for the given RA and Dec """
+def search_tiles(tiles, c):
+    """ Now that you've processed the file, search for the given RA and Dec
+    
+    Parameters
+    ----------
+    c: SkyCoord object
+    """
+    ra_h = c.ra.hour
+    dec_d = c.dec.deg
     names, dec_min, dec_max, ra_min, ra_max, epochs, obsdate = tiles
     has_dec = np.logical_and(dec_d > dec_min, dec_d < dec_max)
     has_ra = np.logical_and(ra_h > ra_min, ra_h < ra_max)
@@ -119,6 +126,8 @@ def get_cutout(imname, name, c):
     ra_deg = c.ra.deg
     dec_deg = c.dec.deg
 
+    print("Cutout centered at position %s,%s" %(ra_deg, dec_deg))
+
     # Open image and establish coordinate system
     im = pyfits.open(imname)[0].data[0,0]
     w = WCS(imname)
@@ -135,7 +144,7 @@ def get_cutout(imname, name, c):
     badx = np.logical_or(x < 0, x > 2 * pix1)
     bady = np.logical_or(y < 0, y > 2 * pix1)
     if np.logical_or(badx, bady):
-        return -1
+        print("Tile has not been imaged at the position of the source")
 
     # Set the dimensions of the image
     # Say we want it to be 13.5 arcseconds on a side,
@@ -167,24 +176,21 @@ def get_cutout(imname, name, c):
     return median_rms
 
 
-def search_vlass(name, ra, dec, date):
+def search_vlass(name, c, date=None):
     """ 
     Searches the VLASS catalog for a source
 
     Parameters
     ----------
     names: name of the sources
-    ra: RA in decimal hours
-    dec: Dec in decimal degrees
-    dates: date in astropy Time format
+    c: coordinates as SkyCoord object
+    date: date in astropy Time format
     """
-    c = SkyCoord(ra*360/24, dec, unit='deg', frame='icrs')
-
     print("Running for %s" %name)
 
     # Find the VLASS tile
     tiles = get_tiles()
-    tilename, epoch, obsdate = search_tiles(tiles, ra, dec)
+    tilename, epoch, obsdate = search_tiles(tiles, c)
 
     if tilename is None:
         print("There is no VLASS tile at this location")
@@ -220,27 +226,28 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description=\
         '''
         Searches VLASS for a source.
-        User needs to supply name, RA (in decimal hours),
+        User needs to supply name, RA (in decimal degrees),
         Dec (in decimal degrees), and (optionally) date (in astropy Time format).
         If there is a date, then will only return VLASS images taken after that date
         (useful for transients with known explosion dates).
         
-        Usage: vlass_search.py <Name> <RA [hrs]> <Dec [deg]> <(optional) Date [astropy Time]>
+        Usage: vlass_search.py <Name> <RA [deg]> <Dec [deg]> <(optional) Date [astropy Time]>
         ''', formatter_class=argparse.RawTextHelpFormatter)
         
     #Check if correct number of arguments are given
     if len(sys.argv) < 3:
-        print("Usage: vlass_search.py <Name> <RA [hrs]> <Dec [deg]> <(optional) Date [astropy Time]>")
+        print("Usage: vlass_search.py <Name> <RA [deg]> <Dec [deg]> <(optional) Date [astropy Time]>")
         sys.exit()
      
     name = str(sys.argv[1])
     ra = float(sys.argv[2])
     dec = float(sys.argv[3])
+    c = SkyCoord(ra, dec, unit='deg')
 
     if (len(sys.argv) >= 4):
         date = Time(sys.argv[4])
         print ('Searching for observations after %s' %date)
-        search_vlass(name, ra, dec, date) 
+        search_vlass(name, c, date) 
     else:
         print ('Searching all obs dates')
-        search_vlass(name, ra, dec) 
+        search_vlass(name, c) 
