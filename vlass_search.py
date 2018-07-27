@@ -177,6 +177,7 @@ def search_vlass(name, ra, dec, date):
     dec: Dec in decimal degrees
     dates: date in astropy Time format
     """
+    c = SkyCoord(ra*np.pi/180, dec, unit='deg', frame='icrs')
 
     print("Running for %s" %name)
 
@@ -223,17 +224,17 @@ if __name__=="__main__":
         If there is a date, then will only return VLASS images taken after that date
         (useful for transients with known explosion dates).
         
-        Usage: finder.py <Name> <RA [hrs]> <Dec [deg]> <(optional) Date [astropy Time]>
+        Usage: vlass_search.py <Name> <RA [hrs]> <Dec [deg]> <(optional) Date [astropy Time]>
         ''', formatter_class=argparse.RawTextHelpFormatter)
         
     #Check if correct number of arguments are given
     if len(sys.argv) < 3:
-        print ("Usage: finder.py <RA> <Dec> <Name>  <rad [deg]> <telescope [P200|Keck]>")
+        print("Usage: vlass_search.py <Name> <RA [hrs]> <Dec [deg]> <(optional) Date [astropy Time]>")
         sys.exit()
      
     name = str(sys.argv[1])
-    ra = sys.argv[2]
-    dec = sys.argv[3]
+    ra = float(sys.argv[2])
+    dec = float(sys.argv[3])
 
     if (len(sys.argv) >= 4):
         date = Time(sys.argv[4])
@@ -242,5 +243,3 @@ if __name__=="__main__":
     else:
         print ('Searching all obs dates')
         search_vlass(name, ra, dec) 
-        
-        
