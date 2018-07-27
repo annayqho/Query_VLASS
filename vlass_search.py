@@ -219,3 +219,34 @@ def search_vlass(names, ra, dec, dates):
                 obsdates[ii] = Time(obsdate, format='iso').mjd
     return limits, obsdates
 
+
+if __name__=="__main__":
+    parser = argparse.ArgumentParser(description=\
+        '''
+        Searches VLASS for a source.
+        User needs to supply name, RA (in decimal hours),
+        Dec (in decimal degrees), and (optionally) date (in astropy Time format).
+        If there is a date, then will only return VLASS images taken after that date
+        (useful for transients with known explosion dates).
+        
+        Usage: finder.py <Name> <RA [hrs]> <Dec [deg]> <(optional) Date [astropy Time]>
+        ''', formatter_class=argparse.RawTextHelpFormatter)
+        
+    #Check if correct number of arguments are given
+    if len(sys.argv) < 3:
+        print ("Usage: finder.py <RA> <Dec> <Name>  <rad [deg]> <telescope [P200|Keck]>")
+        sys.exit()
+     
+    name = str(sys.argv[1])
+    ra = sys.argv[2]
+    dec = sys.argv[3]
+
+    if (len(sys.argv) >= 4):
+        date = Time(sys.argv[4])
+        print ('Searching for observations after %s' %date)
+        search_vlass(name, ra, dec, date) 
+    else:
+        print ('Searching all obs dates')
+        search_vlass(name, ra, dec) 
+        
+        
