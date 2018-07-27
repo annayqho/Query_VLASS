@@ -164,60 +164,52 @@ def get_cutout(imname, name, c):
     return median_rms
 
 
-def search_vlass(names, ra, dec, dates):
+def search_vlass(name, ra, dec, date):
     """ 
-    Searches the VLASS catalog for a list of sources
+    Searches the VLASS catalog for a source
 
     Parameters
     ----------
-    names: array of names of the sources
-    ra: array of RAs in decimal hours
-    dec: array of Decs in decimal degrees
-    dates: array of dates in astropy Time format
+    names: name of the sources
+    ra: RA in decimal hours
+    dec: Dec in decimal degrees
+    dates: date in astropy Time format
     """
 
-    nobj = len(names)
-    limits = np.zeros(nobj)
-    obsdates = np.zeros(nobj)
+    print("Running for %s" %name)
 
-    for ii,name in enumerate(names):
-        print("Running for %s" %name)
+    # Find the VLASS tile
+    tiles = get_tiles()
+    tilename, epoch, obsdate = search_tiles(tiles, ra, dec)
 
-        # Find the VLASS tile
-        tiles = get_tiles()
-        tilename, epoch, obsdate = search_tiles(tiles, ra[ii], dec[ii])
+    if tilename is None:
+        print("There is no VLASS tile at this location")
 
-        if tilename is None:
-            limits[ii] = -1
-            obsdates[ii] = -1
-
+    else:
+        # The VLASS quicklook site only has 1.1, unfortunately
+        if epoch != "VLASS1.1":
+            print("Sorry, tile will be observed in a later epoch")
         else:
-            # The VLASS quicklook site only has 1.1, unfortunately
-            if epoch != "VLASS1.1":
-                print("Sorry, not available yet")
-                limits[ii] = -1
-                obsdates[ii] = -1
-            else:
-                print("Searching for subtile")
-                print(tilename, epoch)
-                subtiles, c_tiles = get_subtiles(tilename, epoch)
-                dist = c.separation(c_tiles)
-                subtile = subtiles[np.argmin(dist)]
+            print("Tile found:")
+            print(tilename, epoch)
+            subtiles, c_tiles = get_subtiles(tilename, epoch)
+            dist = c.separation(c_tiles)
+            subtile = subtiles[np.argmin(dist)]
 
-                url_get = "https://archive-new.nrao.edu/vlass/quicklook/%s/%s/%s" %(
-                        epoch, tilename, subtile)
-                imname = "%s.I.iter1.image.pbcor.tt0.subim.fits" %subtile[0:-1]
-                print(imname)
-                if glob.glob(imname):
-                    median_flux = get_cutout(imname, name, c)
-                else:
-                    fname = url_get + imname
-                    subprocess.run(["wget", fname])
-                    median_flux = get_cutout(imname, name, c)
-                print("Upper limit is %s uJy" %(median_flux*1e6))
-                limits[ii] = median_flux*1e6
-                obsdates[ii] = Time(obsdate, format='iso').mjd
-    return limits, obsdates
+            url_get = "https://archive-new.nrao.edu/vlass/quicklook/%s/%s/%s" %(
+                    epoch, tilename, subtile)
+            imname = "%s.I.iter1.image.pbcor.tt0.subim.fits" %subtile[0:-1]
+            print(imname)
+            if glob.glob(imname):
+                median_flux = get_cutout(imname, name, c)
+            else:
+                fname = url_get + imname
+                subprocess.run(["wget", fname])
+                median_flux = get_cutout(imname, name, c)
+            print("Upper limit is %s uJy" %(median_flux*1e6))
+            limits[ii] = median_flux*1e6
+            obsdates[ii] = Time(obsdate, format='iso').mjd
+            print("Tile observed on %s" obsdate)
 
 
 if __name__=="__main__":
