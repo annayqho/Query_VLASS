@@ -114,6 +114,7 @@ def get_subtiles(tilename, epoch):
 
 
 def get_cutout(imname, name, c):
+    print("Generating cutout")
     # Position of source
     ra_deg = c.ra.deg
     dec_deg = c.dec.deg
@@ -177,7 +178,7 @@ def search_vlass(name, ra, dec, date):
     dec: Dec in decimal degrees
     dates: date in astropy Time format
     """
-    c = SkyCoord(ra*np.pi/180, dec, unit='deg', frame='icrs')
+    c = SkyCoord(ra*180/np.pi, dec, unit='deg', frame='icrs')
 
     print("Running for %s" %name)
 
@@ -210,8 +211,8 @@ def search_vlass(name, ra, dec, date):
                 subprocess.run(["wget", fname])
                 median_flux = get_cutout(imname, name, c)
             print("Upper limit is %s uJy" %(median_flux*1e6))
-            limits[ii] = median_flux*1e6
-            obsdates[ii] = Time(obsdate, format='iso').mjd
+            limit = median_flux*1e6
+            obsdate = Time(obsdate, format='iso').mjd
             print("Tile observed on %s" %obsdate)
 
 
