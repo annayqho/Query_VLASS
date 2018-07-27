@@ -11,7 +11,6 @@ from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from astropy.time import Time
-from ret_radio import get_transients
 
 
 def get_tiles():
@@ -167,11 +166,16 @@ def get_cutout(imname, name, c):
 
 def search_vlass(names, ra, dec, dates):
     """ 
-    RA and Dec format should be: 
-    hours (decimal), degrees (decimal)
+    Searches the VLASS catalog for a list of sources
 
-    Date should be in astropy dates format
+    Parameters
+    ----------
+    names: array of names of the sources
+    ra: array of RAs in decimal hours
+    dec: array of Decs in decimal degrees
+    dates: array of dates in astropy Time format
     """
+
     nobj = len(names)
     limits = np.zeros(nobj)
     obsdates = np.zeros(nobj)
@@ -215,41 +219,3 @@ def search_vlass(names, ra, dec, dates):
                 obsdates[ii] = Time(obsdate, format='iso').mjd
     return limits, obsdates
 
-
-def run_ret():
-    names, ra_raw, dec_raw, dates = get_transients()
-    ra = []
-    dec =[]
-
-    #names = ['PS1-13ess']
-    #ra_raw = ['02:22:09.428']
-    #dec_raw = ['-03:03:00.51']
-
-    limits = np.zeros(len(names))
-    obsdates = np.zeros(len(names))
-
-    for ii,val in enumerate(ra_raw):
-        arr = val.split(":")
-        ra_temp = arr[0]+"h"+arr[1]+"m"+arr[2]+"s"
-        dec_temp = arr[0]+"d"+arr[1]+"m"+arr[2]+"s"
-
-        # Convert dec to degrees and RA to hours
-        c = SkyCoord(ra_temp, dec_temp, frame='icrs')
-        ra_h = c.ra.hour
-        ra.append(ra_h)
-        dec_d = c.dec.deg
-        dec_append(dec_h)
-    search_vlass(names, ra, dec, dates)
-
-
-if __name__=="__main__":
-    inputf = "/Users/annaho/Github/MAXI/MAXI/data/musst_loc.txt"
-    dat = Table.read(inputf, format='ascii')
-    names = np.array(dat['MUSST_ID'])
-    dates = Time(dat['Date'])
-    ra = dat['RA']
-    dec = dat['Dec']
-    c = SkyCoord(ra, dec, frame='icrs', unit='deg')
-    ra_h = c.ra.hour
-    dec_d = c.dec.deg
-    search_vlass(names, ra_h, dec_d, dates)
