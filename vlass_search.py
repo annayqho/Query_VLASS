@@ -3,6 +3,8 @@
 import numpy as np
 import subprocess
 import os
+import sys
+import argparse
 import glob
 import pyfits
 import matplotlib.pyplot as plt
@@ -209,7 +211,7 @@ def search_vlass(name, ra, dec, date):
             print("Upper limit is %s uJy" %(median_flux*1e6))
             limits[ii] = median_flux*1e6
             obsdates[ii] = Time(obsdate, format='iso').mjd
-            print("Tile observed on %s" obsdate)
+            print("Tile observed on %s" %obsdate)
 
 
 if __name__=="__main__":
