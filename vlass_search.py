@@ -178,7 +178,7 @@ def search_vlass(name, ra, dec, date):
     dec: Dec in decimal degrees
     dates: date in astropy Time format
     """
-    c = SkyCoord(ra*180/np.pi, dec, unit='deg', frame='icrs')
+    c = SkyCoord(ra*360/24, dec, unit='deg', frame='icrs')
 
     print("Running for %s" %name)
 
