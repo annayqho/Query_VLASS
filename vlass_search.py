@@ -1,5 +1,10 @@
 """ Search VLASS for a given RA and Dec """
 
+## TO DO
+# 3-sigma clipping before estimating the RMS
+# figure out the weird 1 pixel offset
+
+
 import numpy as np
 import subprocess
 import os
