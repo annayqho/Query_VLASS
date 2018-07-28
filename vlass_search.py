@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 import glob
-import pyfits
+from astropy.io import fits as pyfits
 import matplotlib.pyplot as plt
 from urllib.request import urlopen
 from astropy.table import Table
@@ -159,7 +159,7 @@ def get_cutout(imname, name, c):
     vmax = 1e-3
 
     im_plot = im[int(y-dside1):int(y+dside1),int(x-dside2):int(x+dside2)]
-    median_rms = np.median(np.std(im_plot))
+    median_rms = np.std(im_plot)
 
     plt.imshow(
             np.flipud(im_plot),
@@ -244,7 +244,13 @@ if __name__=="__main__":
     dec = float(sys.argv[3])
     c = SkyCoord(ra, dec, unit='deg')
 
-    if (len(sys.argv) >= 4):
+    if glob.glob("VLASS_dyn_summary.php"):
+        pass
+    else:
+        print("Tile summary file is not here. Download it using wget:\
+               wget https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php")
+
+    if (len(sys.argv) > 4):
         date = Time(sys.argv[4])
         print ('Searching for observations after %s' %date)
         search_vlass(name, c, date) 
