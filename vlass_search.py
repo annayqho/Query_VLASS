@@ -159,7 +159,8 @@ def get_cutout(imname, name, c):
     vmax = 1e-3
 
     im_plot = im[int(y-dside1):int(y+dside1),int(x-dside2):int(x+dside2)]
-    median_rms = np.std(im_plot)
+    rms = np.std(im_plot)
+    peak_flux = np.max(im.flatten())
 
     plt.imshow(
             np.flipud(im_plot),
@@ -167,13 +168,15 @@ def get_cutout(imname, name, c):
                     -0.5*cutout_size*3600.,0.5*cutout_size*3600],
             vmin=vmin,vmax=vmax,cmap='YlOrRd')
 
-    plt.title(name)
+    peakstr = "Peak Flux %s mJy" %(np.round(peak_flux*1e3, 3))
+    rmsstr = "RMS Flux %s mJy" %(np.round(rms*1e3, 3))
+    plt.title(name + ": %s; %s" %(peakstr, rmsstr))
     plt.xlabel("Offset in RA (arcsec)")
     plt.ylabel("Offset in Dec (arcsec)")
 
     plt.savefig(name + ".png") 
 
-    return median_rms
+    return peak_flux,rms
 
 
 def search_vlass(name, c, date=None):
@@ -211,13 +214,14 @@ def search_vlass(name, c, date=None):
             imname = "%s.I.iter1.image.pbcor.tt0.subim.fits" %subtile[0:-1]
             print(imname)
             if glob.glob(imname):
-                median_flux = get_cutout(imname, name, c)
+                peak, rms = get_cutout(imname, name, c)
             else:
                 fname = url_get + imname
                 subprocess.run(["wget", fname])
-                median_flux = get_cutout(imname, name, c)
-            print("Upper limit is %s uJy" %(median_flux*1e6))
-            limit = median_flux*1e6
+                peak, rms = get_cutout(imname, name, c)
+            print("Peak flux is %s uJy" %(peak*1e6))
+            print("RMS is %s uJy" %(rms*1e6))
+            limit = rms*1e6
             obsdate = Time(obsdate, format='iso').mjd
             print("Tile observed on %s" %obsdate)
 
