@@ -164,7 +164,12 @@ def get_cutout(imname, name, c):
     vmax = 1e-3
 
     im_plot = im[int(y-dside1):int(y+dside1),int(x-dside2):int(x+dside2)]
-    rms = np.std(im_plot)
+
+    # 3-sigma clipping
+    rms_temp = np.std(im_plot)
+    keep = np.abs(im_plot) <= 3*rms_temp
+    rms = np.std(im_plot[keep])
+
     peak_flux = np.max(im.flatten())
 
     plt.imshow(
