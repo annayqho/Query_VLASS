@@ -115,7 +115,11 @@ def get_subtiles(tilename, epoch):
     ra = []
     dec = []
     for ii,val in enumerate(ra_raw):
-        hms = "%sh%sm%ss" %(val[1:3], val[3:5], val[5:])
+        if val[1:3] == '24':
+            rah = '00'
+        else:
+            rah = val[1:3]
+        hms = "%sh%sm%ss" %(rah, val[3:5], val[5:])
         ra.append(hms)
         dms = "%sd%sm%ss" %(
                 dec_raw[ii][0:2], dec_raw[ii][2:4], dec_raw[ii][4:])
@@ -151,6 +155,7 @@ def get_cutout(imname, name, c):
     bady = np.logical_or(y < 0, y > 2 * pix1)
     if np.logical_or(badx, bady):
         print("Tile has not been imaged at the position of the source")
+        return None
 
     else:
         # Set the dimensions of the image
@@ -203,6 +208,8 @@ def search_vlass(name, c, date=None):
     date: date in astropy Time format
     """
     print("Running for %s" %name)
+    print("Coordinates %s" %c)
+    print("Date %s" %date)
 
     # Find the VLASS tile
     tiles = get_tiles()
@@ -226,18 +233,18 @@ def search_vlass(name, c, date=None):
                     epoch, tilename, subtile)
             imname = "%s.I.iter1.image.pbcor.tt0.subim.fits" %subtile[0:-1]
             print(imname)
-            if glob.glob(imname):
-                peak, rms = get_cutout(imname, name, c)
-            else:
+            if len(glob.glob(imname)) == 0:
                 fname = url_get + imname
                 subprocess.run(["wget", fname])
-                peak, rms = get_cutout(imname, name, c)
-            print("Peak flux is %s uJy" %(peak*1e6))
-            print("RMS is %s uJy" %(rms*1e6))
-            limit = rms*1e6
-            obsdate = Time(obsdate, format='iso').mjd
-            print("Tile observed on %s" %obsdate)
-            return limit
+            out = get_cutout(imname, name, c)
+            if out is not None:
+                peak, rms = out
+                print("Peak flux is %s uJy" %(peak*1e6))
+                print("RMS is %s uJy" %(rms*1e6))
+                limit = rms*1e6
+                obsdate = Time(obsdate, format='iso').mjd
+                print("Tile observed on %s" %obsdate)
+                return limit,obsdate
     return None
 
 
@@ -246,11 +253,11 @@ if __name__=="__main__":
         '''
         Searches VLASS for a source.
         User needs to supply name, RA (in decimal degrees),
-        Dec (in decimal degrees), and (optionally) date (in astropy Time format).
+        Dec (in decimal degrees), and (optionally) date (in mjd).
         If there is a date, then will only return VLASS images taken after that date
         (useful for transients with known explosion dates).
         
-        Usage: vlass_search.py <Name> <RA [deg]> <Dec [deg]> <(optional) Date [astropy Time]>
+        Usage: vlass_search.py <Name> <RA [deg]> <Dec [deg]> <(optional) Date [mjd]>
         ''', formatter_class=argparse.RawTextHelpFormatter)
         
     #Check if correct number of arguments are given
@@ -270,7 +277,7 @@ if __name__=="__main__":
                wget https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php")
 
     if (len(sys.argv) > 4):
-        date = Time(sys.argv[4])
+        date = Time(float(sys.argv[4]), format='mjd')
         print ('Searching for observations after %s' %date)
         search_vlass(name, c, date) 
     else:
