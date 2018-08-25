@@ -25,7 +25,8 @@ def get_tiles():
     I ran wget https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php
     """
 
-    inputf = open("VLASS_dyn_summary.php", "r")
+    inputf = open(
+            "/Users/annaho/Github/Query_VLASS/VLASS_dyn_summary.php", "r")
     lines = inputf.readlines()
     inputf.close()
 
@@ -234,6 +235,8 @@ def search_vlass(name, c, date=None):
             limit = rms*1e6
             obsdate = Time(obsdate, format='iso').mjd
             print("Tile observed on %s" %obsdate)
+            return limit
+    return None
 
 
 if __name__=="__main__":
@@ -258,7 +261,7 @@ if __name__=="__main__":
     dec = float(sys.argv[3])
     c = SkyCoord(ra, dec, unit='deg')
 
-    if glob.glob("VLASS_dyn_summary.php"):
+    if glob.glob("/Users/annaho/Github/Query_VLASS/VLASS_dyn_summary.php"):
         pass
     else:
         print("Tile summary file is not here. Download it using wget:\
