@@ -152,42 +152,44 @@ def get_cutout(imname, name, c):
     if np.logical_or(badx, bady):
         print("Tile has not been imaged at the position of the source")
 
-    # Set the dimensions of the image
-    # Say we want it to be 13.5 arcseconds on a side,
-    # to match the DES images
-    delt1 = pyfits.open(imname)[0].header['CDELT1']
-    delt2 = pyfits.open(imname)[0].header['CDELT2']
-    cutout_size = 12 / 3600 # in degrees
-    dside1 = -cutout_size/2./delt1
-    dside2 = cutout_size/2./delt2
+    else:
+        # Set the dimensions of the image
+        # Say we want it to be 13.5 arcseconds on a side,
+        # to match the DES images
+        delt1 = pyfits.open(imname)[0].header['CDELT1']
+        delt2 = pyfits.open(imname)[0].header['CDELT2']
+        cutout_size = 12 / 3600 # in degrees
+        dside1 = -cutout_size/2./delt1
+        dside2 = cutout_size/2./delt2
 
-    vmin = -1e-4
-    vmax = 1e-3
+        vmin = -1e-4
+        vmax = 1e-3
 
-    im_plot = im[int(y-dside1):int(y+dside1),int(x-dside2):int(x+dside2)]
+        im_plot_raw = im[int(y-dside1):int(y+dside1),int(x-dside2):int(x+dside2)]
+        im_plot = np.ma.masked_invalid(im_plot_raw)
 
-    # 3-sigma clipping
-    rms_temp = np.std(im_plot)
-    keep = np.abs(im_plot) <= 3*rms_temp
-    rms = np.std(im_plot[keep])
+        # 3-sigma clipping
+        rms_temp = np.ma.std(im_plot)
+        keep = np.ma.abs(im_plot) <= 3*rms_temp
+        rms = np.ma.std(im_plot[keep])
 
-    peak_flux = np.max(im.flatten())
+        peak_flux = np.ma.max(im.flatten())
 
-    plt.imshow(
-            np.flipud(im_plot),
-            extent=[-0.5*cutout_size*3600.,0.5*cutout_size*3600.,
-                    -0.5*cutout_size*3600.,0.5*cutout_size*3600],
-            vmin=vmin,vmax=vmax,cmap='YlOrRd')
+        plt.imshow(
+                np.flipud(im_plot),
+                extent=[-0.5*cutout_size*3600.,0.5*cutout_size*3600.,
+                        -0.5*cutout_size*3600.,0.5*cutout_size*3600],
+                vmin=vmin,vmax=vmax,cmap='YlOrRd')
 
-    peakstr = "Peak Flux %s mJy" %(np.round(peak_flux*1e3, 3))
-    rmsstr = "RMS Flux %s mJy" %(np.round(rms*1e3, 3))
-    plt.title(name + ": %s; %s" %(peakstr, rmsstr))
-    plt.xlabel("Offset in RA (arcsec)")
-    plt.ylabel("Offset in Dec (arcsec)")
+        peakstr = "Peak Flux %s mJy" %(np.round(peak_flux*1e3, 3))
+        rmsstr = "RMS Flux %s mJy" %(np.round(rms*1e3, 3))
+        plt.title(name + ": %s; %s" %(peakstr, rmsstr))
+        plt.xlabel("Offset in RA (arcsec)")
+        plt.ylabel("Offset in Dec (arcsec)")
 
-    plt.savefig(name + ".png") 
+        plt.savefig(name + ".png") 
 
-    return peak_flux,rms
+        return peak_flux,rms
 
 
 def search_vlass(name, c, date=None):
