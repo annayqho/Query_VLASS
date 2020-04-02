@@ -193,6 +193,7 @@ def get_cutout(imname, name, c):
         plt.ylabel("Offset in Dec (arcsec)")
 
         plt.savefig(name + ".png") 
+        plt.close()
 
         return peak_flux,rms
 
@@ -220,7 +221,7 @@ def search_vlass(name, c, date=None):
 
     else:
         # The VLASS quicklook site only has 1.1, unfortunately
-        if epoch != "VLASS1.1":
+        if np.logical_and(epoch != "VLASS1.1", epoch != "VLASS1.2"):
             print("Sorry, tile will be observed in a later epoch")
         else:
             print("Tile found:")
