@@ -7,3 +7,6 @@ and extracts a cutout 12 arcsec on a side.
 Given a non-detection it estimates an upper limit on the flux density by taking the standard deviation of the pixel
 values in this cutout, after performing initial 3sigma clipping
 (removing pixels with a value greater than 3x the standard deviation).
+
+To get the latest observation and imaging log, 
+wget https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php

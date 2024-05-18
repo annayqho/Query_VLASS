@@ -18,14 +18,14 @@ from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from astropy.time import Time
 
+fname = "/Users/annaho/Dropbox/astro/tools/Query_VLASS/vlass_dyn_summary.php"
 
 def get_tiles():
     """ Get tiles 
     I ran wget https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php
     """
 
-    inputf = open(
-            "/Users/annaho/Github/Query_VLASS/VLASS_dyn_summary.php", "r")
+    inputf = open(fname, "r")
     lines = inputf.readlines()
     inputf.close()
 
@@ -80,13 +80,11 @@ def search_tiles(tiles, c):
     name = names[in_tile]
     epoch = epochs[in_tile]
     date = obsdate[in_tile]
-    if len(name) > 1:
-        print("Error: this source is in more than one tile")
-    elif len(name) == 0:
+    if len(name) == 0:
         print("Sorry, no tile found.")
         return None, None, None
     else:
-        return name[0], epoch[0], date[0]
+        return name, epoch, date
 
 
 def get_subtiles(tilename, epoch):
@@ -94,14 +92,19 @@ def get_subtiles(tilename, epoch):
     Parse those filenames and return a list of subtile RA and Dec.
     RA and Dec returned as a SkyCoord object
     """
-    urlpath = urlopen(
-        'https://archive-new.nrao.edu/vlass/quicklook/%s/%s/' %(epoch,tilename))
+    if epoch=='VLASS1.2':
+        epoch = 'VLASS1.2v2'
+    elif epoch=='VLASS1.1':
+        epoch = 'VLASS1.1v2'
+    url_full = 'https://archive-new.nrao.edu/vlass/quicklook/%s/%s/' %(epoch,tilename)
+    print(url_full)
+    urlpath = urlopen(url_full)
     string = (urlpath.read().decode('utf-8')).split("\n")
     vals = np.array([val.strip() for val in string])
     keep_link = np.array(["href" in val.strip() for val in string])
     keep_name = np.array([tilename in val.strip() for val in string])
     string_keep = vals[np.logical_and(keep_link, keep_name)]
-    fname = np.array([val.split("\"")[1] for val in string_keep])
+    fname = np.array([val.split("\"")[7] for val in string_keep])
     pos_raw = np.array([val.split(".")[4] for val in fname])
     if '-' in pos_raw[0]:
         # dec < 0
@@ -125,11 +128,11 @@ def get_subtiles(tilename, epoch):
         dec.append(dms)
     ra = np.array(ra)
     dec = np.array(dec)
-    c = SkyCoord(ra, dec, frame='icrs')
-    return fname, c
+    c_tiles = SkyCoord(ra, dec, frame='icrs')
+    return fname, c_tiles
 
 
-def get_cutout(imname, name, c):
+def get_cutout(imname, name, c, epoch):
     print("Generating cutout")
     # Position of source
     ra_deg = c.ra.deg
@@ -138,7 +141,7 @@ def get_cutout(imname, name, c):
     print("Cutout centered at position %s,%s" %(ra_deg, dec_deg))
 
     # Open image and establish coordinate system
-    im = pyfits.open(imname)[0].data[0,0]
+    im = pyfits.open(imname, ignore_missing_simple=True)[0].data[0,0]
     w = WCS(imname)
 
     # Find the source position in pixels.
@@ -191,13 +194,13 @@ def get_cutout(imname, name, c):
         plt.xlabel("Offset in RA (arcsec)")
         plt.ylabel("Offset in Dec (arcsec)")
 
-        plt.savefig(name + ".png") 
+        plt.savefig(name + "_" + epoch + ".png") 
         plt.close()
 
         return peak_flux,rms
 
 
-def search_vlass(name, c, date=None):
+def run_search(name, c, date=None):
     """ 
     Searches the VLASS catalog for a source
 
@@ -211,41 +214,52 @@ def search_vlass(name, c, date=None):
     print("Coordinates %s" %c)
     print("Date %s" %date)
 
-    # Find the VLASS tile
+    # Find the VLASS tile(s)
     tiles = get_tiles()
-    tilename, epoch, obsdate = search_tiles(tiles, c)
+    tilenames, epochs, obsdates = search_tiles(tiles, c)
 
-    if tilename is None:
+    if tilenames[0] is None:
         print("There is no VLASS tile at this location")
 
     else:
-        # The VLASS quicklook site only has 1.1, unfortunately
-        if np.logical_and(epoch != "VLASS1.1", epoch != "VLASS1.2"):
-            print("Sorry, tile will be observed in a later epoch")
-        else:
-            print("Tile found:")
-            print(tilename, epoch)
-            subtiles, c_tiles = get_subtiles(tilename, epoch)
-            dist = c.separation(c_tiles)
-            subtile = subtiles[np.argmin(dist)]
+        for ii,tilename in enumerate(tilenames):
+            epoch = epochs[ii]
+            if epoch=='VLASS1.2':
+                epoch = 'VLASS1.2v2'
+            elif epoch=='VLASS1.1':
+                epoch = 'VLASS1.1v2'
+            obsdate = obsdates[ii]
+            if np.logical_and.reduce((epoch != "VLASS1.1", 
+                epoch != "VLASS1.2",epoch != "VLASS2.1",epoch != 'VLASS2.2')):
+                print("Sorry, tile will be observed in a later epoch")
+            else:
+                print("Tile found:")
+                print(tilename, epoch)
+                subtiles, c_tiles = get_subtiles(tilename, epoch)
+                dist = c.separation(c_tiles)
+                subtile = subtiles[np.argmin(dist)]
+                print(subtile)
 
-            url_get = "https://archive-new.nrao.edu/vlass/quicklook/%s/%s/%s" %(
-                    epoch, tilename, subtile)
-            imname = "%s.I.iter1.image.pbcor.tt0.subim.fits" %subtile[0:-1]
-            print(imname)
-            if len(glob.glob(imname)) == 0:
-                fname = url_get + imname
-                subprocess.run(["wget", fname])
-            out = get_cutout(imname, name, c)
-            if out is not None:
-                peak, rms = out
-                print("Peak flux is %s uJy" %(peak*1e6))
-                print("RMS is %s uJy" %(rms*1e6))
-                limit = rms*1e6
-                obsdate = Time(obsdate, format='iso').mjd
-                print("Tile observed on %s" %obsdate)
-                return limit,obsdate
-    return None
+                url_get = "https://archive-new.nrao.edu/vlass/quicklook/%s/%s/%s" %(
+                        epoch, tilename, subtile)
+                imname="%s.I.iter1.image.pbcor.tt0.subim.fits" %subtile[0:-1]
+                print(imname)
+                if len(glob.glob(imname)) == 0:
+                    fname = url_get + imname
+                    cmd = "curl -O %s" %fname
+                    print(cmd)
+                    os.system(cmd)
+                out = get_cutout(imname, name, c, epoch)
+                if out is not None:
+                    peak, rms = out
+                    print("Peak flux is %s uJy" %(peak*1e6))
+                    print("RMS is %s uJy" %(rms*1e6))
+                    limit = rms*1e6
+                    obsdate = Time(obsdate, format='iso').mjd
+                    print("Tile observed on %s" %obsdate)
+                    print(limit, obsdate)
+                    #return limit,obsdate
+    #return None
 
 
 if __name__=="__main__":
@@ -270,7 +284,7 @@ if __name__=="__main__":
     dec = float(sys.argv[3])
     c = SkyCoord(ra, dec, unit='deg')
 
-    if glob.glob("/Users/annaho/Github/Query_VLASS/VLASS_dyn_summary.php"):
+    if glob.glob("/Users/annaho/Dropbox/astro/tools/Query_VLASS/VLASS_dyn_summary.php"):
         pass
     else:
         print("Tile summary file is not here. Download it using wget:\
@@ -279,7 +293,7 @@ if __name__=="__main__":
     if (len(sys.argv) > 4):
         date = Time(float(sys.argv[4]), format='mjd')
         print ('Searching for observations after %s' %date)
-        search_vlass(name, c, date) 
+        run_search(name, c, date) 
     else:
         print ('Searching all obs dates')
-        search_vlass(name, c) 
+        run_search(name, c) 
