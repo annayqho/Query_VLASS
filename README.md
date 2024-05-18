@@ -1,6 +1,6 @@
 The VLA Sky Survey (VLASS; Lacy et al. 2019), has been mapping the entire sky visible to the VLA at low frequencies (2-4 GHz)
 in three epochs at a cadence of 32 months.
-The Quicklook images are now available for the first epoch (17,000 square degrees).
+The Quicklook images are now available for the first two epochs (17,000 square degrees).
 This code searches the existing Quicklook data.
 It locates the appropriate VLASS tile and subtile for a given RA and Dec
 and extracts a cutout 12 arcsec on a side.
