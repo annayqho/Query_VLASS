@@ -106,25 +106,20 @@ def get_subtiles(tilename, epoch):
     string_keep = vals[np.logical_and(keep_link, keep_name)]
     fname = np.array([val.split("\"")[7] for val in string_keep])
     pos_raw = np.array([val.split(".")[4] for val in fname])
-    if '-' in pos_raw[0]:
-        # dec < 0
-        ra_raw = np.array([val.split("-")[0] for val in pos_raw])
-        dec_raw = np.array([val.split("-")[1] for val in pos_raw])
-    else:
-        # dec > 0
-        ra_raw = np.array([val.split("+")[0] for val in pos_raw])
-        dec_raw = np.array([val.split("+")[1] for val in pos_raw])
     ra = []
     dec = []
-    for ii,val in enumerate(ra_raw):
-        if val[1:3] == '24':
-            rah = '00'
-        else:
-            rah = val[1:3]
-        hms = "%sh%sm%ss" %(rah, val[3:5], val[5:])
+    for ii in range(len(pos_raw)):
+        rah = pos_raw[ii][1:3]
+        if rah=="24":
+            rah = "00"
+        ram = pos_raw[ii][3:5]
+        ras = pos_raw[ii][5:7]
+        decd = pos_raw[ii][7:10]
+        decm = pos_raw[ii][10:12]
+        decs = pos_raw[ii][12:]
+        hms = "%sh%sm%ss" %(rah, ram, ras)
         ra.append(hms)
-        dms = "%sd%sm%ss" %(
-                dec_raw[ii][0:2], dec_raw[ii][2:4], dec_raw[ii][4:])
+        dms = "%sd%sm%ss" %(decd, decm, decs)
         dec.append(dms)
     ra = np.array(ra)
     dec = np.array(dec)
