@@ -96,7 +96,7 @@ def get_subtiles(tilename, epoch):
         epoch = 'VLASS1.2v2'
     elif epoch=='VLASS1.1':
         epoch = 'VLASS1.1v2'
-    url_full = 'https://archive-new.nrao.edu/vlass/quicklook/%s/%s/' %(epoch,tilename)
+    url_full = 'https://vlass-dl.nrao.edu/vlass/quicklook/%s/%s/' %(epoch,tilename)
     print(url_full)
     urlpath = urlopen(url_full)
     string = (urlpath.read().decode('utf-8')).split("\n")
@@ -283,7 +283,7 @@ if __name__=="__main__":
         pass
     else:
         print("Tile summary file is not here. Download it using wget:\
-               wget https://archive-new.nrao.edu/vlass/VLASS_dyn_summary.php")
+               wget https://vlass-dl.nrao.edu/vlass/VLASS_dyn_summary.php")
 
     if (len(sys.argv) > 4):
         date = Time(float(sys.argv[4]), format='mjd')
